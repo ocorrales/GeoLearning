@@ -154,6 +154,7 @@ let totalQuestions = 0;
 let correctAnswers = 0;
 let bestStreak = 0;
 let scoreSubmitted = false;
+let submissionInFlight = false;
 let leaderboardScores = [];
 let visibleScoreCount = 7;
 let focusWasActive = false;
@@ -166,6 +167,7 @@ const wrongPenalty = 4;
 const failedQuestionPenalty = 12;
 const timeoutPenalty = 15;
 const localScoresKey = "geolearning.localScores";
+const submittedScoresKey = "geolearning.submittedScores";
 const initialLeaderboardCount = 7;
 const leaderboardPageSize = 7;
 const maxSpeedBonus = 4;
@@ -208,6 +210,46 @@ function saveLocalScore(entry) {
   return scores;
 }
 
+function getSubmittedScores() {
+  try {
+    return JSON.parse(localStorage.getItem(submittedScoresKey)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function getScoreFingerprint(entry) {
+  return [
+    cleanPlayerName(entry.playerName).toLowerCase(),
+    entry.score,
+    entry.level,
+    entry.bestStreak,
+    entry.totalQuestions,
+    entry.correctAnswers,
+  ].join("|");
+}
+
+function wasRecentlySubmitted(entry) {
+  const now = Date.now();
+  const fingerprint = getScoreFingerprint(entry);
+  return getSubmittedScores().some(
+    (submitted) =>
+      submitted.fingerprint === fingerprint &&
+      now - new Date(submitted.submittedAt).getTime() < 5 * 60 * 1000,
+  );
+}
+
+function rememberSubmittedScore(entry) {
+  const submitted = [
+    {
+      fingerprint: getScoreFingerprint(entry),
+      submittedAt: new Date().toISOString(),
+    },
+    ...getSubmittedScores(),
+  ].slice(0, 20);
+  localStorage.setItem(submittedScoresKey, JSON.stringify(submitted));
+}
+
 function formatScoreDate(value) {
   if (!value) {
     return "Just now";
@@ -223,6 +265,26 @@ function formatScoreDate(value) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+function getScoreDisplayKey(entry) {
+  const date = new Date(entry.createdAt);
+  const minute = Number.isNaN(date.getTime())
+    ? "unknown"
+    : date.toISOString().slice(0, 16);
+  return `${getScoreFingerprint(entry)}|${minute}`;
+}
+
+function dedupeScores(scores) {
+  const seen = new Set();
+  return scores.filter((entry) => {
+    const key = getScoreDisplayKey(entry);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
   });
 }
 
@@ -350,7 +412,7 @@ function getWrongAnswers(type, country) {
 async function fetchLeaderboard() {
   if (!hasSupabase) {
     leaderboardStatus.textContent = "Local leaderboard. Configure Supabase for online competition.";
-    leaderboardScores = getLocalScores();
+    leaderboardScores = dedupeScores(getLocalScores());
     visibleScoreCount = initialLeaderboardCount;
     renderLeaderboard();
     return;
@@ -373,22 +435,24 @@ async function fetchLeaderboard() {
     }
 
     const scores = await response.json();
-    leaderboardScores = scores.map((entry) => ({
-      playerName: entry.player_name,
-      score: entry.score,
-      level: entry.level,
-      bestStreak: entry.best_streak,
-      totalQuestions: entry.total_questions,
-      correctAnswers: entry.correct_answers,
-      createdAt: entry.created_at,
-    }));
+    leaderboardScores = dedupeScores(
+      scores.map((entry) => ({
+        playerName: entry.player_name,
+        score: entry.score,
+        level: entry.level,
+        bestStreak: entry.best_streak,
+        totalQuestions: entry.total_questions,
+        correctAnswers: entry.correct_answers,
+        createdAt: entry.created_at,
+      })),
+    );
     visibleScoreCount = initialLeaderboardCount;
     renderLeaderboard();
     leaderboardStatus.textContent = "Online leaderboard loaded.";
   } catch (error) {
     console.error(error);
     leaderboardStatus.textContent = "Online leaderboard failed. Showing local scores.";
-    leaderboardScores = getLocalScores();
+    leaderboardScores = dedupeScores(getLocalScores());
     visibleScoreCount = initialLeaderboardCount;
     renderLeaderboard();
   }
@@ -432,7 +496,7 @@ function renderLeaderboard() {
 }
 
 async function submitScore() {
-  if (!sessionEnded || scoreSubmitted || totalQuestions === 0) {
+  if (!sessionEnded || scoreSubmitted || submissionInFlight || totalQuestions === 0) {
     leaderboardStatus.textContent =
       totalQuestions === 0
         ? "Answer at least one question before submitting."
@@ -456,13 +520,24 @@ async function submitScore() {
     createdAt: new Date().toISOString(),
   };
 
+  if (wasRecentlySubmitted(entry)) {
+    scoreSubmitted = true;
+    leaderboardStatus.textContent = "This score was already submitted.";
+    updateGameStatus();
+    return;
+  }
+
+  submissionInFlight = true;
   saveLocalScore(entry);
+  rememberSubmittedScore(entry);
   scoreSubmitted = true;
   updateGameStatus();
 
   if (!hasSupabase) {
     leaderboardStatus.textContent = "Score saved locally. Add Supabase config to publish online.";
     await fetchLeaderboard();
+    submissionInFlight = false;
+    updateGameStatus();
     return;
   }
 
@@ -498,6 +573,7 @@ async function submitScore() {
     await fetchLeaderboard();
   }
 
+  submissionInFlight = false;
   updateGameStatus();
 }
 
@@ -819,7 +895,8 @@ function updateGameStatus() {
   hintButton.disabled = answered || hintUsed || sessionEnded;
   restartSessionButton.disabled =
     !sessionStarted && totalQuestions === 0 && score === 0 && !currentQuestion;
-  submitScoreButton.disabled = !sessionEnded || scoreSubmitted || totalQuestions === 0;
+  submitScoreButton.disabled =
+    !sessionEnded || scoreSubmitted || submissionInFlight || totalQuestions === 0;
   submitScoreInlineButton.disabled = submitScoreButton.disabled;
   submitScoreInlineButton.classList.toggle(
     "hidden",
