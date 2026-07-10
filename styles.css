@@ -115,6 +115,18 @@ input {
   }
 }
 
+@keyframes focusZoom {
+  from {
+    opacity: 0.72;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .app-shell {
   position: relative;
   z-index: 1;
@@ -141,11 +153,48 @@ input {
 .learning-panel,
 .competition-panel {
   padding: 28px;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .game-panel,
 .competition-panel {
   align-self: start;
+}
+
+body.game-focus-active .learning-panel {
+  display: grid;
+  min-height: calc(100vh - 32px);
+  padding: 18px;
+  box-shadow: 0 28px 80px rgba(49, 102, 142, 0.26);
+  animation: focusZoom 220ms ease-out both;
+}
+
+body.game-focus-active .app-shell {
+  display: block;
+  width: min(760px, calc(100% - 28px));
+  padding: 16px 0;
+}
+
+body.game-focus-active .brand-row,
+body.game-focus-active .lucas-credit,
+body.game-focus-active .player-panel,
+body.game-focus-active .rules-panel,
+body.game-focus-active .competition-panel {
+  display: none;
+}
+
+body.game-focus-active .challenge-panel {
+  align-self: center;
+  width: 100%;
+  margin: auto 0;
+  border-color: rgba(94, 188, 153, 0.72);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 0 0 3px rgba(94, 188, 153, 0.16),
+    0 18px 42px rgba(49, 102, 142, 0.16);
 }
 
 .brand-row {
@@ -372,12 +421,30 @@ button:active {
   font-size: 1.55rem;
 }
 
+.challenge-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
 #score {
   border-radius: 999px;
   padding: 8px 12px;
   color: #204c61;
   background: #e5f5fb;
   white-space: nowrap;
+}
+
+.focus-exit-button {
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: linear-gradient(180deg, #ffffff 0%, #eaf6fc 100%);
+  border: 1px solid #cde2f1;
+  box-shadow: 0 6px 14px rgba(92, 127, 156, 0.12);
+  font-size: 0.82rem;
 }
 
 .status-row {
@@ -463,6 +530,27 @@ button:active {
   background: linear-gradient(180deg, #f08b82 0%, #df6d68 100%);
 }
 
+.focus-toggle {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 0;
+  border: 1px solid rgba(205, 226, 241, 0.95);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #204c61;
+  background: rgba(229, 245, 251, 0.72);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.focus-toggle input {
+  width: 18px;
+  min-height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--green);
+}
+
 .challenge-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -488,6 +576,21 @@ button:active {
 .submit-score-button {
   width: 100%;
   margin-top: 14px;
+}
+
+.inline-submit-score {
+  width: 100%;
+  margin-top: 12px;
+  background: linear-gradient(180deg, #5ebc99 0%, #2d8d7a 100%);
+}
+
+.load-more-button {
+  width: 100%;
+  margin-top: 10px;
+  color: var(--ink);
+  background: linear-gradient(180deg, #ffffff 0%, #eaf6fc 100%);
+  border: 1px solid #cde2f1;
+  box-shadow: 0 6px 14px rgba(92, 127, 156, 0.12);
 }
 
 button:disabled {
@@ -522,17 +625,23 @@ button:disabled {
 
 .leaderboard-list li {
   display: grid;
-  grid-template-columns: minmax(100px, 0.9fr) minmax(160px, 1.1fr);
+  grid-template-columns: minmax(92px, 0.85fr) minmax(154px, 1.25fr) minmax(88px, 0.7fr);
   gap: 10px;
   align-items: center;
   border-radius: 8px;
   padding: 10px 12px;
 }
 
-.leaderboard-list span {
+.leaderboard-list span,
+.leaderboard-list time {
   color: var(--muted);
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.leaderboard-list time {
+  text-align: right;
+  white-space: nowrap;
 }
 
 .rules-list {
@@ -1011,5 +1120,14 @@ li {
 
   .map-scene {
     height: 210px;
+  }
+
+  .leaderboard-list li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .leaderboard-list time {
+    text-align: left;
   }
 }

@@ -51,6 +51,10 @@
             <button id="start-session" type="button">Start session</button>
             <button id="restart-session" type="button">Restart session</button>
           </div>
+          <label class="focus-toggle">
+            <input id="focus-mode" type="checkbox" checked />
+            <span>Focus the game area while playing</span>
+          </label>
           <p id="player-helper" class="helper-text">
             Use a nickname, not your real full name.
           </p>
@@ -62,7 +66,12 @@
               <p class="eyebrow">World Cup challenge</p>
               <h2 id="challenge-title">Level <span id="level">1</span></h2>
             </div>
-            <strong id="score">0 pts</strong>
+            <div class="challenge-toolbar">
+              <strong id="score">0 pts</strong>
+              <button id="focus-exit" class="focus-exit-button hidden" type="button">
+                Show full page
+              </button>
+            </div>
           </div>
 
           <div class="status-row" aria-label="Game status">
@@ -86,6 +95,9 @@
           </div>
 
           <p id="feedback" class="feedback"></p>
+          <button id="submit-score-inline" class="inline-submit-score hidden" type="button">
+            Submit score to leaderboard
+          </button>
         </section>
 
         <section class="rules-panel" aria-labelledby="rules-title">
@@ -111,6 +123,9 @@
             <button id="refresh-leaderboard" type="button">Refresh</button>
           </div>
           <ol id="leaderboard-list" class="leaderboard-list"></ol>
+          <button id="load-more-scores" class="load-more-button" type="button">
+            Load more scores
+          </button>
           <button id="submit-score" class="submit-score-button" type="button">
             Submit my score
           </button>

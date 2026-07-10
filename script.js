@@ -119,13 +119,17 @@ const newQuestionButton = document.querySelector("#new-question");
 const hintButton = document.querySelector("#hint-button");
 const restartSessionButton = document.querySelector("#restart-session");
 const submitScoreButton = document.querySelector("#submit-score");
+const submitScoreInlineButton = document.querySelector("#submit-score-inline");
+const focusExitButton = document.querySelector("#focus-exit");
 const feedback = document.querySelector("#feedback");
 const playerForm = document.querySelector("#player-form");
 const playerNameInput = document.querySelector("#player-name");
 const playerHelper = document.querySelector("#player-helper");
+const focusModeInput = document.querySelector("#focus-mode");
 const leaderboardList = document.querySelector("#leaderboard-list");
 const leaderboardStatus = document.querySelector("#leaderboard-status");
 const refreshLeaderboardButton = document.querySelector("#refresh-leaderboard");
+const loadMoreScoresButton = document.querySelector("#load-more-scores");
 
 let audioContext;
 let selectedCountry = countries[0];
@@ -150,6 +154,9 @@ let totalQuestions = 0;
 let correctAnswers = 0;
 let bestStreak = 0;
 let scoreSubmitted = false;
+let leaderboardScores = [];
+let visibleScoreCount = 7;
+let focusWasActive = false;
 
 const questionTimeLimit = 15;
 const questionsPerSession = 10;
@@ -159,6 +166,9 @@ const wrongPenalty = 4;
 const failedQuestionPenalty = 12;
 const timeoutPenalty = 15;
 const localScoresKey = "geolearning.localScores";
+const initialLeaderboardCount = 7;
+const leaderboardPageSize = 7;
+const maxSpeedBonus = 4;
 const config = window.GEOLEARNING_CONFIG || {};
 const hasSupabase = Boolean(config.supabaseUrl && config.supabaseAnonKey);
 
@@ -193,9 +203,27 @@ function getLocalScores() {
 function saveLocalScore(entry) {
   const scores = [entry, ...getLocalScores()]
     .sort((a, b) => b.score - a.score || b.level - a.level)
-    .slice(0, 20);
+    .slice(0, 50);
   localStorage.setItem(localScoresKey, JSON.stringify(scores));
   return scores;
+}
+
+function formatScoreDate(value) {
+  if (!value) {
+    return "Just now";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown";
+  }
+
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function findCountry(query) {
@@ -322,14 +350,16 @@ function getWrongAnswers(type, country) {
 async function fetchLeaderboard() {
   if (!hasSupabase) {
     leaderboardStatus.textContent = "Local leaderboard. Configure Supabase for online competition.";
-    renderLeaderboard(getLocalScores());
+    leaderboardScores = getLocalScores();
+    visibleScoreCount = initialLeaderboardCount;
+    renderLeaderboard();
     return;
   }
 
   leaderboardStatus.textContent = "Loading online leaderboard...";
   try {
     const response = await fetch(
-      `${config.supabaseUrl}/rest/v1/scores?select=player_name,score,level,best_streak,total_questions,correct_answers,created_at&order=score.desc,level.desc,created_at.asc&limit=10`,
+      `${config.supabaseUrl}/rest/v1/scores?select=player_name,score,level,best_streak,total_questions,correct_answers,created_at&order=score.desc,level.desc,created_at.asc&limit=50`,
       {
         headers: {
           apikey: config.supabaseAnonKey,
@@ -343,47 +373,62 @@ async function fetchLeaderboard() {
     }
 
     const scores = await response.json();
-    renderLeaderboard(
-      scores.map((entry) => ({
-        playerName: entry.player_name,
-        score: entry.score,
-        level: entry.level,
-        bestStreak: entry.best_streak,
-        totalQuestions: entry.total_questions,
-        correctAnswers: entry.correct_answers,
-      })),
-    );
+    leaderboardScores = scores.map((entry) => ({
+      playerName: entry.player_name,
+      score: entry.score,
+      level: entry.level,
+      bestStreak: entry.best_streak,
+      totalQuestions: entry.total_questions,
+      correctAnswers: entry.correct_answers,
+      createdAt: entry.created_at,
+    }));
+    visibleScoreCount = initialLeaderboardCount;
+    renderLeaderboard();
     leaderboardStatus.textContent = "Online leaderboard loaded.";
   } catch (error) {
     console.error(error);
     leaderboardStatus.textContent = "Online leaderboard failed. Showing local scores.";
-    renderLeaderboard(getLocalScores());
+    leaderboardScores = getLocalScores();
+    visibleScoreCount = initialLeaderboardCount;
+    renderLeaderboard();
   }
 }
 
-function renderLeaderboard(scores) {
+function renderLeaderboard() {
   leaderboardList.innerHTML = "";
+  const visibleScores = leaderboardScores.slice(0, visibleScoreCount);
 
-  if (scores.length === 0) {
+  if (leaderboardScores.length === 0) {
     const empty = document.createElement("li");
     empty.textContent = "No scores yet. Finish a session to be first.";
     leaderboardList.append(empty);
+    loadMoreScoresButton.classList.add("hidden");
     return;
   }
 
-  scores.slice(0, 10).forEach((entry) => {
+  visibleScores.forEach((entry) => {
     const item = document.createElement("li");
     const name = document.createElement("strong");
     const details = document.createElement("span");
+    const date = document.createElement("time");
     const accuracy =
       entry.totalQuestions > 0
         ? Math.round((entry.correctAnswers / entry.totalQuestions) * 100)
         : 0;
     name.textContent = entry.playerName;
     details.textContent = `${entry.score} pts · L${entry.level} · ${entry.bestStreak} streak · ${accuracy}%`;
-    item.append(name, details);
+    date.textContent = formatScoreDate(entry.createdAt);
+    if (entry.createdAt) {
+      date.dateTime = entry.createdAt;
+    }
+    item.append(name, details, date);
     leaderboardList.append(item);
   });
+
+  loadMoreScoresButton.classList.toggle(
+    "hidden",
+    visibleScoreCount >= leaderboardScores.length,
+  );
 }
 
 async function submitScore() {
@@ -413,6 +458,7 @@ async function submitScore() {
 
   saveLocalScore(entry);
   scoreSubmitted = true;
+  updateGameStatus();
 
   if (!hasSupabase) {
     leaderboardStatus.textContent = "Score saved locally. Add Supabase config to publish online.";
@@ -451,6 +497,8 @@ async function submitScore() {
     leaderboardStatus.textContent = "Online submit failed. Score saved locally.";
     await fetchLeaderboard();
   }
+
+  updateGameStatus();
 }
 
 function buildQuestionDeck() {
@@ -641,14 +689,16 @@ function checkAnswer(answer, button) {
   if (answer === currentQuestion.correctAnswer) {
     answered = true;
     stopTimer();
+    const speedBonus = Math.ceil((Math.max(0, secondsLeft) / questionTimeLimit) * maxSpeedBonus);
     totalQuestions += 1;
     correctAnswers += 1;
     streak += 1;
+    const earnedPoints = 10 + level * 2 + streak + speedBonus;
     bestStreak = Math.max(bestStreak, streak);
-    score += 10 + level * 2 + streak;
+    score += earnedPoints;
     level += 1;
     button.classList.add("correct");
-    feedback.textContent = `Correct. Reward unlocked: ${getReward()}`;
+    feedback.textContent = `Correct. +${earnedPoints} points, including +${speedBonus} speed bonus. Reward unlocked: ${getReward()}`;
     renderCountry(currentQuestion.country);
     createRewardBurst();
     updateGameStatus();
@@ -727,10 +777,6 @@ function endSession(message) {
   answerOptions.innerHTML = "";
   feedback.textContent = `Final score: ${score} points. Correct answers: ${correctAnswers}/${totalQuestions}.`;
   updateGameStatus();
-
-  if (playerName) {
-    submitScore();
-  }
 }
 
 function getReward() {
@@ -774,6 +820,18 @@ function updateGameStatus() {
   restartSessionButton.disabled =
     !sessionStarted && totalQuestions === 0 && score === 0 && !currentQuestion;
   submitScoreButton.disabled = !sessionEnded || scoreSubmitted || totalQuestions === 0;
+  submitScoreInlineButton.disabled = submitScoreButton.disabled;
+  submitScoreInlineButton.classList.toggle(
+    "hidden",
+    !sessionEnded || scoreSubmitted || totalQuestions === 0,
+  );
+  const focusActive = Boolean(focusModeInput.checked && sessionStarted && !scoreSubmitted);
+  document.body.classList.toggle("game-focus-active", focusActive);
+  focusExitButton.classList.toggle("hidden", !focusActive);
+  if (focusActive && !focusWasActive) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  focusWasActive = focusActive;
 }
 
 function buildQuickPicks() {
@@ -829,6 +887,11 @@ submitScoreButton.addEventListener("click", () => {
   submitScore();
 });
 
+submitScoreInlineButton.addEventListener("click", () => {
+  playUnravelSound();
+  submitScore();
+});
+
 restartSessionButton.addEventListener("click", () => {
   playUnravelSound();
   resetSession();
@@ -837,6 +900,20 @@ restartSessionButton.addEventListener("click", () => {
 refreshLeaderboardButton.addEventListener("click", () => {
   playUnravelSound();
   fetchLeaderboard();
+});
+
+loadMoreScoresButton.addEventListener("click", () => {
+  playUnravelSound();
+  visibleScoreCount += leaderboardPageSize;
+  renderLeaderboard();
+});
+
+focusModeInput.addEventListener("change", updateGameStatus);
+
+focusExitButton.addEventListener("click", () => {
+  playUnravelSound();
+  focusModeInput.checked = false;
+  updateGameStatus();
 });
 
 playerForm.addEventListener("submit", (event) => {
