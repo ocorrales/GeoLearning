@@ -448,6 +448,21 @@ button:active {
   border-color: #f4aaa2;
 }
 
+.session-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.session-controls button:first-child {
+  background: linear-gradient(180deg, #5ebc99 0%, #2d8d7a 100%);
+}
+
+.session-controls button:last-child {
+  background: linear-gradient(180deg, #f08b82 0%, #df6d68 100%);
+}
+
 .challenge-actions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -455,7 +470,11 @@ button:active {
   margin-top: 12px;
 }
 
-.challenge-actions button:nth-child(2) {
+.challenge-actions button:first-child {
+  background: linear-gradient(180deg, #5ebc99 0%, #2d8d7a 100%);
+}
+
+.challenge-actions button:last-child {
   color: var(--ink);
   background: linear-gradient(180deg, #fff8df 0%, #f6e8a8 100%);
   box-shadow: 0 8px 18px rgba(154, 123, 38, 0.12);
@@ -534,9 +553,13 @@ button:disabled {
 
 .study-panel {
   margin-top: 24px;
-  border: 1px solid rgba(205, 226, 241, 0.95);
+  border: 2px solid rgba(94, 188, 153, 0.55);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.62);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(94, 188, 153, 0.18), transparent 12rem),
+    radial-gradient(circle at 95% 15%, rgba(79, 143, 216, 0.18), transparent 10rem),
+    rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 42px rgba(45, 141, 122, 0.14);
   overflow: hidden;
 }
 
@@ -545,14 +568,53 @@ button:disabled {
   justify-content: space-between;
   gap: 14px;
   align-items: center;
-  padding: 18px;
+  padding: 20px;
   cursor: pointer;
   font-weight: 900;
+}
+
+.study-summary-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.study-summary-copy strong {
+  color: #204c61;
+  font-size: 1.2rem;
 }
 
 .study-panel summary small {
   color: var(--muted);
   font-weight: 800;
+  line-height: 1.35;
+}
+
+.study-summary-action {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 9px 12px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #75aee9 0%, #4f8fd8 100%);
+  box-shadow: 0 8px 18px rgba(79, 143, 216, 0.22);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.study-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 18px 16px;
+}
+
+.study-hints span {
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: #204c61;
+  background: rgba(229, 245, 251, 0.92);
+  border: 1px solid rgba(205, 226, 241, 0.95);
+  font-size: 0.82rem;
+  font-weight: 850;
 }
 
 .study-panel[open] {
@@ -942,6 +1004,7 @@ li {
   .search-box,
   .facts-grid,
   .status-row,
+  .session-controls,
   .challenge-actions {
     grid-template-columns: 1fr;
   }

@@ -27,7 +27,7 @@
         </div>
 
         <div class="lucas-credit">
-          <strong>Implemented by Lucas</strong>
+          <strong>Implemented by Lucas Corrales</strong>
           <span>Built as a real coding project while learning how web apps work.</span>
         </div>
 
@@ -47,6 +47,10 @@
             />
             <button type="submit">Save</button>
           </form>
+          <div class="session-controls">
+            <button id="start-session" type="button">Start session</button>
+            <button id="restart-session" type="button">Restart session</button>
+          </div>
           <p id="player-helper" class="helper-text">
             Use a nickname, not your real full name.
           </p>
@@ -71,7 +75,7 @@
           </div>
 
           <p id="question-text" class="question-text">
-            Pick a country, then start the challenge.
+            Enter a nickname, then start the challenge.
           </p>
 
           <div id="answer-options" class="answer-options"></div>
@@ -92,6 +96,7 @@
             <li>Each question gives 3 tries and only 15 seconds.</li>
             <li>Hints cost points, wrong answers cost points, timeouts hurt more.</li>
             <li>The country card is hidden while you answer.</li>
+            <li>Restart anytime before submitting if you want a fresh session.</li>
           </ul>
         </section>
       </section>
@@ -114,9 +119,19 @@
 
         <details class="study-panel">
           <summary>
-            <span>Study mode</span>
-            <small>Open when you want to review countries</small>
+            <span class="study-summary-copy">
+              <strong>Training Zone: Study Mode</strong>
+              <small>Review countries, capitals, languages, cities, players, and map location before you compete.</small>
+            </span>
+            <span class="study-summary-action">Open study tools</span>
           </summary>
+
+          <div class="study-hints" aria-label="Study mode features">
+            <span>Country cards</span>
+            <span>Moving map pin</span>
+            <span>World Cup players</span>
+            <span>Practice facts</span>
+          </div>
 
           <div class="search-area">
             <label for="country-input">Type a country</label>

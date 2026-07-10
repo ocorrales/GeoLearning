@@ -8,6 +8,7 @@ Static geography challenge game for kids. It can run directly from `index.html` 
 - Each question has a 15 second timer.
 - The leaderboard only accepts scores after the session ends, so players are compared on the same rules.
 - Study mode is available, but the country card is hidden while a challenge question is active.
+- Players can restart a session before submitting a score.
 
 ## Local use
 

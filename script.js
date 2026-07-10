@@ -114,8 +114,10 @@ const rewardElement = document.querySelector("#reward");
 const progressElement = document.querySelector("#progress");
 const questionText = document.querySelector("#question-text");
 const answerOptions = document.querySelector("#answer-options");
+const startSessionButton = document.querySelector("#start-session");
 const newQuestionButton = document.querySelector("#new-question");
 const hintButton = document.querySelector("#hint-button");
+const restartSessionButton = document.querySelector("#restart-session");
 const submitScoreButton = document.querySelector("#submit-score");
 const feedback = document.querySelector("#feedback");
 const playerForm = document.querySelector("#player-form");
@@ -132,7 +134,7 @@ let level = 1;
 let score = 0;
 let triesLeft = 3;
 let streak = 0;
-let answered = false;
+let answered = true;
 let hintUsed = false;
 let questionDeck = [];
 let lastQuestionTypeKey = "";
@@ -141,6 +143,7 @@ let secondsLeft = 15;
 let timerId;
 let sessionSecondsLeft = 180;
 let sessionTimerId;
+let sessionStarted = false;
 let sessionEnded = false;
 let playerName = localStorage.getItem("geolearning.playerName") || "";
 let totalQuestions = 0;
@@ -176,6 +179,7 @@ function setPlayerName(name) {
   localStorage.setItem("geolearning.playerName", playerName);
   playerNameInput.value = playerName;
   playerHelper.textContent = `Playing as ${playerName}.`;
+  updateGameStatus();
 }
 
 function getLocalScores() {
@@ -527,7 +531,65 @@ function stopTimer() {
   clearInterval(timerId);
 }
 
+function resetSession() {
+  stopTimer();
+  stopSessionTimer();
+  level = 1;
+  score = 0;
+  triesLeft = 3;
+  streak = 0;
+  answered = true;
+  hintUsed = false;
+  currentQuestion = undefined;
+  secondsLeft = questionTimeLimit;
+  sessionSecondsLeft = sessionTimeLimit;
+  sessionStarted = false;
+  sessionEnded = false;
+  totalQuestions = 0;
+  correctAnswers = 0;
+  bestStreak = 0;
+  scoreSubmitted = false;
+  buildQuestionDeck();
+  answerOptions.innerHTML = "";
+  questionText.textContent = playerName
+    ? "Ready. Start the session when you are prepared."
+    : "Enter a nickname, then start the challenge.";
+  feedback.textContent = "Session not started yet. No timer is running.";
+  hideAnswerCountry();
+  updateGameStatus();
+}
+
+function startSession() {
+  if (!playerName) {
+    const cleanedName = cleanPlayerName(playerNameInput.value);
+    if (!cleanedName) {
+      playerHelper.textContent = "Choose a nickname before starting.";
+      playerNameInput.focus();
+      updateGameStatus();
+      return;
+    }
+    setPlayerName(cleanedName);
+  }
+
+  if (sessionStarted && !sessionEnded) {
+    return;
+  }
+
+  sessionStarted = true;
+  sessionEnded = false;
+  scoreSubmitted = false;
+  createQuestion();
+}
+
 function createQuestion() {
+  if (!sessionStarted) {
+    questionText.textContent = playerName
+      ? "Ready. Start the session when you are prepared."
+      : "Enter a nickname, then start the challenge.";
+    updateGameStatus();
+    return;
+  }
+
   if (sessionEnded) {
     updateGameStatus();
     return;
@@ -706,8 +768,11 @@ function updateGameStatus() {
   streakElement.textContent = `${streak} streak`;
   rewardElement.textContent = streak > 0 ? `Reward: ${getReward()}` : "Reward: none yet";
   progressElement.textContent = `${totalQuestions}/${questionsPerSession}`;
-  newQuestionButton.disabled = !answered || sessionEnded;
+  startSessionButton.disabled = sessionStarted && !sessionEnded;
+  newQuestionButton.disabled = !sessionStarted || !answered || sessionEnded;
   hintButton.disabled = answered || hintUsed || sessionEnded;
+  restartSessionButton.disabled =
+    !sessionStarted && totalQuestions === 0 && score === 0 && !currentQuestion;
   submitScoreButton.disabled = !sessionEnded || scoreSubmitted || totalQuestions === 0;
 }
 
@@ -743,6 +808,11 @@ showAnswerButton.addEventListener("click", () => {
   quizAnswer.classList.toggle("hidden");
 });
 
+startSessionButton.addEventListener("click", () => {
+  playUnravelSound();
+  startSession();
+});
+
 newQuestionButton.addEventListener("click", () => {
   playUnravelSound();
   stopTimer();
@@ -757,6 +827,11 @@ hintButton.addEventListener("click", () => {
 submitScoreButton.addEventListener("click", () => {
   playUnravelSound();
   submitScore();
+});
+
+restartSessionButton.addEventListener("click", () => {
+  playUnravelSound();
+  resetSession();
 });
 
 refreshLeaderboardButton.addEventListener("click", () => {
@@ -775,5 +850,5 @@ if (playerName) {
 
 renderCountry(selectedCountry);
 buildQuestionDeck();
-createQuestion();
+resetSession();
 fetchLeaderboard();
