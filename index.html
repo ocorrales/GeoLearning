@@ -15,7 +15,7 @@
     </div>
 
     <main class="app-shell">
-      <section class="learning-panel" aria-labelledby="app-title">
+      <section class="learning-panel game-panel" aria-labelledby="app-title">
         <div class="brand-row">
           <div class="globe-mark" aria-hidden="true">
             <span></span>
@@ -24,6 +24,11 @@
             <p class="eyebrow">Geography for kids</p>
             <h1 id="app-title">GeoLearning</h1>
           </div>
+        </div>
+
+        <div class="lucas-credit">
+          <strong>Implemented by Lucas</strong>
+          <span>Built as a real coding project while learning how web apps work.</span>
         </div>
 
         <section class="player-panel" aria-labelledby="player-title">
@@ -47,25 +52,6 @@
           </p>
         </section>
 
-        <div class="search-area">
-          <label for="country-input">Type a country</label>
-          <div class="search-box">
-            <input
-              id="country-input"
-              name="country"
-              type="text"
-              autocomplete="off"
-              placeholder="Example: Japan"
-            />
-            <button id="search-button" type="button">Search</button>
-          </div>
-          <p id="helper-text" class="helper-text">
-            Pick any World Cup country to study it. The challenge mixes all countries.
-          </p>
-        </div>
-
-        <div id="quick-picks" class="quick-picks" aria-label="Suggested countries"></div>
-
         <section class="challenge-panel" aria-labelledby="challenge-title">
           <div class="challenge-topline">
             <div>
@@ -77,7 +63,8 @@
 
           <div class="status-row" aria-label="Game status">
             <span id="lives">3 tries</span>
-            <span id="timer">30s</span>
+            <span id="timer">15s</span>
+            <span id="session-timer">3:00</span>
             <span id="streak">0 streak</span>
             <span id="reward">Reward: none yet</span>
             <span id="progress">0/10</span>
@@ -92,12 +79,24 @@
           <div class="challenge-actions">
             <button id="new-question" type="button">Next mixed question</button>
             <button id="hint-button" type="button">Hint</button>
-            <button id="submit-score" type="button">Submit score</button>
           </div>
 
           <p id="feedback" class="feedback"></p>
         </section>
 
+        <section class="rules-panel" aria-labelledby="rules-title">
+          <p class="eyebrow">Rules</p>
+          <h2 id="rules-title">Score as much as you can</h2>
+          <ul class="rules-list">
+            <li>Session ends after 10 questions or 3 minutes.</li>
+            <li>Each question gives 3 tries and only 15 seconds.</li>
+            <li>Hints cost points, wrong answers cost points, timeouts hurt more.</li>
+            <li>The country card is hidden while you answer.</li>
+          </ul>
+        </section>
+      </section>
+
+      <section class="competition-panel" aria-live="polite">
         <section class="leaderboard-panel" aria-labelledby="leaderboard-title">
           <div class="leaderboard-header">
             <div>
@@ -107,98 +106,127 @@
             <button id="refresh-leaderboard" type="button">Refresh</button>
           </div>
           <ol id="leaderboard-list" class="leaderboard-list"></ol>
+          <button id="submit-score" class="submit-score-button" type="button">
+            Submit my score
+          </button>
           <p id="leaderboard-status" class="helper-text">Scores are local until Supabase is configured.</p>
         </section>
-      </section>
 
-      <section class="country-card" aria-live="polite">
-        <div id="map-scene" class="map-scene" aria-hidden="true">
-          <div class="map-cloud map-cloud-one"></div>
-          <div class="map-cloud map-cloud-two"></div>
-          <svg
-            class="world-map"
-            viewBox="0 0 1000 500"
-            role="img"
-            aria-label="Stylized world map"
-          >
-            <path
-              class="land north-america"
-              d="M132 126 C172 78 250 72 304 106 C338 126 374 134 402 116 C431 98 460 115 456 148 C452 182 414 190 392 214 C360 249 332 280 286 278 C250 276 236 246 204 236 C167 224 116 240 94 204 C76 174 96 148 132 126 Z"
-            />
-            <path
-              class="land south-america"
-              d="M322 274 C367 286 388 324 375 368 C365 405 384 438 350 470 C320 446 303 408 306 372 C309 334 282 306 322 274 Z"
-            />
-            <path
-              class="land europe"
-              d="M500 118 C540 92 604 98 632 128 C610 152 574 158 550 178 C520 164 488 152 500 118 Z"
-            />
-            <path
-              class="land africa"
-              d="M536 188 C590 166 656 194 678 246 C698 292 666 342 642 388 C606 374 568 334 552 292 C538 254 504 214 536 188 Z"
-            />
-            <path
-              class="land asia"
-              d="M626 116 C704 72 838 86 894 148 C930 188 892 234 840 224 C796 216 764 244 724 230 C686 216 650 236 626 204 C598 168 592 138 626 116 Z"
-            />
-            <path
-              class="land australia"
-              d="M760 342 C808 318 870 330 900 366 C884 400 820 414 774 394 C744 382 732 360 760 342 Z"
-            />
-          </svg>
-          <div id="map-pin" class="map-pin"></div>
-          <span id="map-label" class="map-label">Pick a country</span>
-        </div>
+        <details class="study-panel">
+          <summary>
+            <span>Study mode</span>
+            <small>Open when you want to review countries</small>
+          </summary>
 
-        <div id="empty-state" class="empty-state">
-          <h2>Choose a country to begin</h2>
-          <p>
-            Each card shows basic facts: capital, approximate population, major
-            cities, and language.
-          </p>
-        </div>
-
-        <article id="country-result" class="country-result hidden">
-          <div class="country-heading">
-            <div>
-              <p id="region" class="region"></p>
-              <h2 id="country-name"></h2>
+          <div class="search-area">
+            <label for="country-input">Type a country</label>
+            <div class="search-box">
+              <input
+                id="country-input"
+                name="country"
+                type="text"
+                autocomplete="off"
+                placeholder="Example: Japan"
+              />
+              <button id="search-button" type="button">Search</button>
             </div>
-            <span id="flag" class="flag" aria-hidden="true"></span>
+            <p id="helper-text" class="helper-text">
+              Pick any World Cup country to study it. The challenge mixes all countries.
+            </p>
           </div>
 
-          <dl class="facts-grid">
-            <div>
-              <dt>Capital</dt>
-              <dd id="capital"></dd>
-            </div>
-            <div>
-              <dt>Population</dt>
-              <dd id="population"></dd>
-            </div>
-            <div>
-              <dt>Language</dt>
-              <dd id="language"></dd>
-            </div>
-            <div>
-              <dt>Main player</dt>
-              <dd id="player"></dd>
-            </div>
-          </dl>
+          <div id="quick-picks" class="quick-picks" aria-label="Suggested countries"></div>
 
-          <div class="cities-block">
-            <h3>Major cities</h3>
-            <ul id="cities"></ul>
-          </div>
-
-          <div class="quiz-block">
-            <p id="quiz-question"></p>
-            <div class="quiz-actions">
-              <button id="show-answer" type="button">Show answer</button>
-              <strong id="quiz-answer" class="hidden"></strong>
+          <section class="country-card">
+            <div id="map-scene" class="map-scene" aria-hidden="true">
+              <div class="map-cloud map-cloud-one"></div>
+              <div class="map-cloud map-cloud-two"></div>
+              <svg
+                class="world-map"
+                viewBox="0 0 1000 500"
+                role="img"
+                aria-label="Stylized world map"
+              >
+                <path
+                  class="land north-america"
+                  d="M132 126 C172 78 250 72 304 106 C338 126 374 134 402 116 C431 98 460 115 456 148 C452 182 414 190 392 214 C360 249 332 280 286 278 C250 276 236 246 204 236 C167 224 116 240 94 204 C76 174 96 148 132 126 Z"
+                />
+                <path
+                  class="land south-america"
+                  d="M322 274 C367 286 388 324 375 368 C365 405 384 438 350 470 C320 446 303 408 306 372 C309 334 282 306 322 274 Z"
+                />
+                <path
+                  class="land europe"
+                  d="M500 118 C540 92 604 98 632 128 C610 152 574 158 550 178 C520 164 488 152 500 118 Z"
+                />
+                <path
+                  class="land africa"
+                  d="M536 188 C590 166 656 194 678 246 C698 292 666 342 642 388 C606 374 568 334 552 292 C538 254 504 214 536 188 Z"
+                />
+                <path
+                  class="land asia"
+                  d="M626 116 C704 72 838 86 894 148 C930 188 892 234 840 224 C796 216 764 244 724 230 C686 216 650 236 626 204 C598 168 592 138 626 116 Z"
+                />
+                <path
+                  class="land australia"
+                  d="M760 342 C808 318 870 330 900 366 C884 400 820 414 774 394 C744 382 732 360 760 342 Z"
+                />
+              </svg>
+              <div id="map-pin" class="map-pin"></div>
+              <span id="map-label" class="map-label">Pick a country</span>
             </div>
-          </div>
-        </article>
+
+            <div id="empty-state" class="empty-state">
+              <h2>Choose a country to begin</h2>
+              <p>
+                Each card shows basic facts: capital, approximate population,
+                major cities, language, and main player.
+              </p>
+            </div>
+
+            <article id="country-result" class="country-result hidden">
+              <div class="country-heading">
+                <div>
+                  <p id="region" class="region"></p>
+                  <h2 id="country-name"></h2>
+                </div>
+                <span id="flag" class="flag" aria-hidden="true"></span>
+              </div>
+
+              <dl class="facts-grid">
+                <div>
+                  <dt>Capital</dt>
+                  <dd id="capital"></dd>
+                </div>
+                <div>
+                  <dt>Population</dt>
+                  <dd id="population"></dd>
+                </div>
+                <div>
+                  <dt>Language</dt>
+                  <dd id="language"></dd>
+                </div>
+                <div>
+                  <dt>Main player</dt>
+                  <dd id="player"></dd>
+                </div>
+              </dl>
+
+              <div class="cities-block">
+                <h3>Major cities</h3>
+                <ul id="cities"></ul>
+              </div>
+
+              <div class="quiz-block">
+                <p id="quiz-question"></p>
+                <div class="quiz-actions">
+                  <button id="show-answer" type="button">Show answer</button>
+                  <strong id="quiz-answer" class="hidden"></strong>
+                </div>
+              </div>
+            </article>
+          </section>
+        </details>
       </section>
     </main>
 

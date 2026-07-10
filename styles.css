@@ -124,11 +124,12 @@ input {
   display: grid;
   grid-template-columns: minmax(300px, 0.82fr) minmax(320px, 1.18fr);
   gap: 28px;
-  align-items: center;
+  align-items: start;
   padding: 32px 0;
 }
 
 .learning-panel,
+.competition-panel,
 .country-card {
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -137,8 +138,14 @@ input {
   backdrop-filter: blur(18px);
 }
 
-.learning-panel {
+.learning-panel,
+.competition-panel {
   padding: 28px;
+}
+
+.game-panel,
+.competition-panel {
+  align-self: start;
 }
 
 .brand-row {
@@ -215,11 +222,12 @@ h1 {
 }
 
 .search-area {
-  margin-top: 34px;
+  margin-top: 18px;
 }
 
 .player-panel,
-.leaderboard-panel {
+.leaderboard-panel,
+.rules-panel {
   margin-top: 24px;
   border: 1px solid rgba(205, 226, 241, 0.95);
   border-radius: 8px;
@@ -228,9 +236,27 @@ h1 {
 }
 
 .player-panel h2,
-.leaderboard-panel h2 {
+.leaderboard-panel h2,
+.rules-panel h2 {
   margin-bottom: 12px;
   font-size: 1.35rem;
+}
+
+.lucas-credit {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  border: 1px solid rgba(94, 188, 153, 0.35);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #204c61;
+  background: rgba(229, 245, 251, 0.72);
+}
+
+.lucas-credit span {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.35;
 }
 
 .player-form {
@@ -356,7 +382,7 @@ button:active {
 
 .status-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin: 16px 0;
 }
@@ -373,12 +399,14 @@ button:active {
   text-align: center;
 }
 
-#timer {
+#timer,
+#session-timer {
   color: #8a5a00;
   background: #fff8df;
 }
 
-#timer.warning {
+#timer.warning,
+#session-timer.warning {
   color: #8f1d18;
   background: #fde8e5;
   border-color: #f4aaa2;
@@ -422,7 +450,7 @@ button:active {
 
 .challenge-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 12px;
 }
@@ -433,9 +461,14 @@ button:active {
   box-shadow: 0 8px 18px rgba(154, 123, 38, 0.12);
 }
 
-.challenge-actions button:last-child,
-.leaderboard-header button {
+.leaderboard-header button,
+.submit-score-button {
   background: linear-gradient(180deg, #5ebc99 0%, #2d8d7a 100%);
+}
+
+.submit-score-button {
+  width: 100%;
+  margin-top: 14px;
 }
 
 button:disabled {
@@ -483,8 +516,58 @@ button:disabled {
   font-weight: 800;
 }
 
+.rules-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rules-list li {
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #204c61;
+  background: rgba(229, 245, 251, 0.86);
+  font-weight: 800;
+}
+
+.study-panel {
+  margin-top: 24px;
+  border: 1px solid rgba(205, 226, 241, 0.95);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
+}
+
+.study-panel summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.study-panel summary small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.study-panel[open] {
+  padding-bottom: 18px;
+}
+
+.study-panel[open] .search-area,
+.study-panel[open] .quick-picks,
+.study-panel[open] .country-card {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
 .country-card {
-  min-height: 620px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -850,6 +933,7 @@ li {
   }
 
   .learning-panel,
+  .competition-panel,
   .empty-state,
   .country-result {
     padding: 18px;

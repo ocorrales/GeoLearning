@@ -2,6 +2,13 @@
 
 Static geography challenge game for kids. It can run directly from `index.html` and can be deployed to GitHub Pages.
 
+## Game format
+
+- Each session ends after 10 questions or 3 minutes, whichever happens first.
+- Each question has a 15 second timer.
+- The leaderboard only accepts scores after the session ends, so players are compared on the same rules.
+- Study mode is available, but the country card is hidden while a challenge question is active.
+
 ## Local use
 
 Open `index.html` in a browser. Without Supabase config, scores are saved in `localStorage` only.

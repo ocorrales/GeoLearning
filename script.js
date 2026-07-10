@@ -108,6 +108,7 @@ const levelElement = document.querySelector("#level");
 const scoreElement = document.querySelector("#score");
 const livesElement = document.querySelector("#lives");
 const timerElement = document.querySelector("#timer");
+const sessionTimerElement = document.querySelector("#session-timer");
 const streakElement = document.querySelector("#streak");
 const rewardElement = document.querySelector("#reward");
 const progressElement = document.querySelector("#progress");
@@ -136,16 +137,20 @@ let hintUsed = false;
 let questionDeck = [];
 let lastQuestionTypeKey = "";
 let lastQuestionCountryName = "";
-let secondsLeft = 30;
+let secondsLeft = 15;
 let timerId;
+let sessionSecondsLeft = 180;
+let sessionTimerId;
+let sessionEnded = false;
 let playerName = localStorage.getItem("geolearning.playerName") || "";
 let totalQuestions = 0;
 let correctAnswers = 0;
 let bestStreak = 0;
 let scoreSubmitted = false;
 
-const questionTimeLimit = 30;
+const questionTimeLimit = 15;
 const questionsPerSession = 10;
+const sessionTimeLimit = 180;
 const hintPenalty = 6;
 const wrongPenalty = 4;
 const failedQuestionPenalty = 12;
@@ -378,9 +383,13 @@ function renderLeaderboard(scores) {
 }
 
 async function submitScore() {
-  if (scoreSubmitted || totalQuestions === 0) {
+  if (!sessionEnded || scoreSubmitted || totalQuestions === 0) {
     leaderboardStatus.textContent =
-      totalQuestions === 0 ? "Answer at least one question before submitting." : "Score already submitted.";
+      totalQuestions === 0
+        ? "Answer at least one question before submitting."
+        : !sessionEnded
+          ? "Finish the timed session before submitting."
+          : "Score already submitted.";
     return;
   }
 
@@ -472,6 +481,33 @@ function drawQuestion() {
   return question;
 }
 
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function startSessionTimer() {
+  if (sessionTimerId || sessionEnded) {
+    return;
+  }
+
+  sessionSecondsLeft = sessionTimeLimit;
+  sessionTimerId = setInterval(() => {
+    sessionSecondsLeft -= 1;
+    updateGameStatus();
+
+    if (sessionSecondsLeft <= 0) {
+      endSession("Time is up. Submit your score to the leaderboard.");
+    }
+  }, 1000);
+}
+
+function stopSessionTimer() {
+  clearInterval(sessionTimerId);
+  sessionTimerId = undefined;
+}
+
 function startTimer() {
   clearInterval(timerId);
   secondsLeft = questionTimeLimit;
@@ -492,15 +528,17 @@ function stopTimer() {
 }
 
 function createQuestion() {
-  if (totalQuestions >= questionsPerSession) {
-    stopTimer();
-    answered = true;
-    questionText.textContent = "Session complete. Submit your score or start a new session by reloading.";
-    answerOptions.innerHTML = "";
-    feedback.textContent = `Final score: ${score} points. Correct answers: ${correctAnswers}/${totalQuestions}.`;
+  if (sessionEnded) {
     updateGameStatus();
     return;
   }
+
+  if (totalQuestions >= questionsPerSession) {
+    endSession("Session complete. Submit your score to the leaderboard.");
+    return;
+  }
+
+  startSessionTimer();
 
   const { country, type } = drawQuestion();
   hideAnswerCountry();
@@ -607,13 +645,27 @@ function handleTimeout() {
 }
 
 function maybeCompleteSession() {
-  if (totalQuestions < questionsPerSession) {
+  if (totalQuestions < questionsPerSession && sessionSecondsLeft > 0) {
     return;
   }
 
+  endSession("Session complete. Submit your score to the leaderboard.");
+}
+
+function endSession(message) {
+  if (sessionEnded) {
+    return;
+  }
+
+  sessionEnded = true;
   stopTimer();
-  questionText.textContent = "Session complete. Submit your score to the leaderboard.";
-  newQuestionButton.disabled = true;
+  stopSessionTimer();
+  answered = true;
+  questionText.textContent = message;
+  answerOptions.innerHTML = "";
+  feedback.textContent = `Final score: ${score} points. Correct answers: ${correctAnswers}/${totalQuestions}.`;
+  updateGameStatus();
+
   if (playerName) {
     submitScore();
   }
@@ -649,12 +701,14 @@ function updateGameStatus() {
   livesElement.textContent = `${triesLeft} ${triesLeft === 1 ? "try" : "tries"}`;
   timerElement.textContent = `${secondsLeft}s`;
   timerElement.classList.toggle("warning", secondsLeft <= 8 && !answered);
+  sessionTimerElement.textContent = formatTime(Math.max(0, sessionSecondsLeft));
+  sessionTimerElement.classList.toggle("warning", sessionSecondsLeft <= 30 && !sessionEnded);
   streakElement.textContent = `${streak} streak`;
   rewardElement.textContent = streak > 0 ? `Reward: ${getReward()}` : "Reward: none yet";
   progressElement.textContent = `${totalQuestions}/${questionsPerSession}`;
-  newQuestionButton.disabled = !answered || totalQuestions >= questionsPerSession;
-  hintButton.disabled = answered || hintUsed;
-  submitScoreButton.disabled = scoreSubmitted || totalQuestions === 0;
+  newQuestionButton.disabled = !answered || sessionEnded;
+  hintButton.disabled = answered || hintUsed || sessionEnded;
+  submitScoreButton.disabled = !sessionEnded || scoreSubmitted || totalQuestions === 0;
 }
 
 function buildQuickPicks() {
